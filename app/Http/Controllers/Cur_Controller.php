@@ -192,4 +192,59 @@ protected function converter($datepara,$start,$end,$amountval){
 			//return redirect('cur_convert')->with('status', $status);
 }
 
+public function historical(){
+
+        Cur_Controller::checkexist();
+        $data2=DB::table('curr_info')->where('date',date("Y-m-d"))->get();      
+        //print_r($data2);
+        return view('historical', compact('data2'));
+
+
+}
+
+public function historicalcurrency(Request $request){
+     Cur_Controller::checkexist();
+     
+         $datecheck=date("Y-m-d");
+        if($request->currfrom!="none"){
+           
+            if($request->datetext!=null){
+                $datecheck=$request->datetext;
+            }
+     $data2=DB::table('curr_info')->where('date',$datecheck)->get(); 
+      foreach ($data2 as $values) {
+
+       if($values->currency==$request->currfrom){
+        $currency_from=$values->rate;
+       }
+               
+            }
+            $i=0;
+      foreach ($data2 as $value) {
+
+        $result=number_format((float)(floatval(1)*floatval($value->rate))/floatval($currency_from), 3, '.', '');
+         $result2=number_format((float)(floatval(1)*floatval($currency_from))/floatval($value->rate), 3, '.', '');
+            //
+           $finalresult[$i][0]=$value->currency;
+           $finalresult[$i][1]=$result;
+           $finalresult[$i][2]=$result2;
+
+            $i++;
+            //echo "1  ".$request->currfrom." = ". $result." ".$value->currency."<br>"; 
+               
+            }
+             $finalresult[0][4]=$datecheck;
+        }
+          else{
+            echo "Select The Currency";
+            $finalresult=null;
+          }     
+         
+        //print_r($data2);
+        //return view('historical', compact('data2'));
+             return redirect('historical')->with('finalresult', $finalresult);
+
+
+}
+
 }
