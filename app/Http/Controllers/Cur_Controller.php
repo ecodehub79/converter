@@ -11,22 +11,39 @@ use Redirect;
 class Cur_Controller extends Controller
 {
 	
-	public function test(){
-		echo 'jhj';
+	public function widget(){
+		
+		return view('widget');
 	}
-	public function cur_convert()
+	
+	public function test( Request $request){
+		$currency= $request->currency;
+		
+		$profile_info=DB::table('currency_profile')->where('currency',$currency)->get();		
+        //print_r($profile_info);
+        return view('profile', compact('profile_info'));
+	}
+public function cur_convert()
 	{
 		
 
-		 Cur_Controller::checkexist();
+		
+         Cur_Controller::checkexist();
 
 
 $data2=DB::table('curr_info')->where('date',date("Y-m-d"))->get();		
 //print_r($data2);
-return view('cur_convert', compact('data2'));
+$recent=Cur_Controller::recentconvert();
+$cros=Cur_Controller::crossdate();
+return view('cur_convert', compact('data2','recent','cros'));
 
 
 
+}
+
+protected function recentconvert(){
+    $data=DB::table('recent_convert')->get();
+    return $data;
 }
 
 public function updatecurrency(Request $request){
@@ -152,6 +169,17 @@ foreach ($conversionResult['rates'] as $key => $value) {
 protected function converter($datepara,$start,$end,$amountval){
 
      $convertion=$start."/".$end;
+	  $recentcheck=DB::table('recent_convert')->get();
+            $rowcount = $recentcheck->count();
+
+            if($rowcount<10){
+                 DB::table('recent_convert')->insert(['currency_currency' => $convertion,  'amount'=> $amountval]);
+
+            }else{
+                   DB::select( DB::raw("DELETE FROM recent_convert LIMIT 1") );
+                   DB::table('recent_convert')->insert(['currency_currency' => $convertion,  'amount'=> $amountval]);
+
+            }
             //echo $convertion;
             $check=DB::table('cuur_amount')->where('currency_currency', $convertion)->get();
             $checkCount = $check->count();
@@ -243,6 +271,131 @@ public function historicalcurrency(Request $request){
         //print_r($data2);
         //return view('historical', compact('data2'));
              return redirect('historical')->with('finalresult', $finalresult);
+
+
+}
+
+
+public function graphview(){
+         Cur_Controller::checkexist();
+
+
+$data2=DB::table('curr_info')->where('date',date("Y-m-d"))->get();      
+//print_r($data2);
+return view('graphview', compact('data2'));
+
+}
+
+public function graphcurrency(Request $request){
+        // $data2=DB::table('curr_info')->whereBetween('date', [$request->datetext, $request->datetext2])->where('currency', $request->currto)->orWhere('currency',$request->currfrom)->get();
+    
+    $kk=1;
+    
+     
+    
+        if($request->timetext!="none"){
+
+            if($request->timetext=="365"){
+        $kk=24;
+    }
+    else if($request->timetext=="180"){
+        $kk=12;
+    }
+    else if($request->timetext=="90"){
+        $kk=6;
+    }
+
+
+             $data2 = DB::select( DB::raw("SELECT * FROM curr_info WHERE date >= ( CURDATE() - INTERVAL '$request->timetext' DAY ) AND (currency ='$request->currfrom' OR currency ='$request->currto') ORDER BY date") );
+            
+       $i=1;
+       $j=0;
+       $k=$kk;
+       $cou=1;
+       $spcheck=0;
+       foreach($data2 as $values){
+        if($cou==1){
+        if($values->currency==$request->currfrom){
+            $spcheck=1;
+            break;
+        }}$cou++;}
+
+       foreach($data2 as $value){
+
+        $v=$k-1;
+        if($k%$kk==0||$v%$kk==0){
+
+             
+
+                 // $finalresult[$i][0]=$value->date;
+                // $finalresult[$i][1]=number_format((float)(floatval(1)*floatval($value->))/floatval($currency_from), 3, '.', '');
+        if($i==1){
+            $currency_from=$value->rate;
+            $i++;
+        }
+        else{
+            $currency_to=$value->rate;
+            if($spcheck==1){
+            $finalresult[$j][0]=number_format((float)(floatval(1)*floatval($currency_to))/floatval($currency_from), 4, '.', '');}
+            else{
+            $finalresult[$j][0]=number_format((float)(floatval(1)*floatval($currency_from))/floatval($currency_to), 4, '.', '');
+
+            }
+             $finalresult[$j][1]=$value->date;
+             $i=1;
+             $j++;
+
+        }
+
+            //echo $value->currency." ".$value->date."<br>";
+        $k++;
+    }
+
+        }
+        $finalresult[0][7]=$j;
+       return redirect('graphview')->with('finalresult', $finalresult);
+
+        }
+
+       
+       
+        
+}
+
+protected function crossdate(){
+     $columnCurrency= array("AUD","CAD","CHF","CNY","EUR","GBP","INR","JPY","USD");
+     $currdate=date("Y-m-d");
+    $data=DB::table('curr_info')->where('date',$currdate)->get();
+     $data2 = DB::select( DB::raw("SELECT * FROM curr_info WHERE date = '$currdate' AND (currency ='USD' OR currency ='GBP' OR currency ='EUR' OR currency ='CAD' OR currency ='CHF' OR currency ='AUD' OR currency ='INR' OR currency ='CNY' OR currency ='JPY')") );
+$finalcros=null;
+$i=0;
+$k=1;
+$j=1;
+$finalcros[0][0]= $columnCurrency[0]; $finalcros[0][5]= $columnCurrency[5];
+$finalcros[0][1]= $columnCurrency[1]; $finalcros[0][6]= $columnCurrency[6];
+$finalcros[0][2]= $columnCurrency[2]; $finalcros[0][7]= $columnCurrency[7];
+$finalcros[0][3]= $columnCurrency[3]; $finalcros[0][8]= $columnCurrency[8];
+$finalcros[0][4]= $columnCurrency[4];
+
+
+    foreach($data as $val){
+
+        $finalcros[$j][0]=$val->currency;
+        $finalcros[$j+1][0]='(Inverse)';
+   
+        $k=1;
+        foreach($data2 as $val2){
+            $finalcros[$j][$k]=number_format((float)(floatval(1)*floatval($val2->rate))/floatval($val->rate), 5, '.', '');
+            $finalcros[$j+1][$k]=number_format((float)(floatval(1)*floatval($val->rate))/floatval($val2->rate), 5, '.', '');
+            $k++;
+
+        }
+        $j=$j+2;
+    }
+    $finalcros[10][168]=$j-1;
+
+    return $finalcros;
+    
 
 
 }
