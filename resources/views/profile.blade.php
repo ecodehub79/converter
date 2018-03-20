@@ -1,4 +1,6 @@
 @include('header')
+
+
    <body class=" homepage " data-gr-c-s-loaded="true">
       <div class="custom">
          <script type="text/javascript">_atrk_opts = { atrk_acct:"r3XBq1O7kI20L7", domain:"currency.wiki",dynamic: true};
@@ -84,22 +86,15 @@
                      </div>
                      <div id="cont-wrap" class="site-content-middle r">
                         <div class="site-content-middle-in">
-                           <div id="content">
-<div class="top-list currency-page">
-<h1><span>Top Exchange</span></h1>
-<ul class="nostyle">
- @foreach($all_currency as $values)
-                      <li>{{$values->currency_currency}} ({{$values->amount}} times)</li>
- @endforeach
-
-
-
-</ul>
-</div>
-</div>
+                                  <?php
+								  foreach($profile_info as $profile)
+								  {
+									  echo $profile->info;
+								  }
+								  ?>
                         </div>
                      </div>
-                     @include('sidebar')
+                    @include('sidebar')
                   </div>
                </div>
               
@@ -110,7 +105,8 @@
          <div class="footer_guarantor"></div>
       </div>
    
-@include('footer')
+      @include('header')
+   
       
    </body>
 </html>
